@@ -88,6 +88,50 @@ async fn timezone(
 
     Ok(())
 }
+
+#[poise::command(slash_command, prefix_command)]
+async fn join(
+    ctx: Context<'_>,
+) -> Result<(), Error> {
+    let u = ctx.author();
+    let channel_id = ctx.guild().unwrap().voice_states.get(&u.id).unwrap().channel_id.unwrap();
+    // let channel = ctx.guild().unwrap().channels.get(&channel_id).unwrap();
+    let guild_id = ctx.guild().unwrap().id;
+
+    let manager = songbird::get(&ctx.serenity_context())
+        .await
+        .expect("Songbird Voice client placed in at initialisation.")
+        .clone();
+
+    if let Ok(handler_lock) = manager.join(guild_id, channel_id).await {
+        // Attach an event handler to see notifications of all track errors.
+        let mut handler = handler_lock.lock().await;
+        handler.add_global_event(TrackEvent::Error.into(), TrackErrorNotifier);
+    }
+
+    ctx.say(format!("Joining <#{}>!", channel_id)).await?;
+    Ok(())
+}
+
+#[poise::command(slash_command, prefix_command)]
+async fn leave(
+    ctx: Context<'_>,
+) -> Result<(), Error> {
+    let u = ctx.author();
+    let channel_id = ctx.guild().unwrap().voice_states.get(&u.id).unwrap().channel_id.unwrap();
+    let guild_id = ctx.guild().unwrap().id;
+
+    let manager = songbird::get(&ctx.serenity_context())
+        .await
+        .expect("Songbird Voice client placed in at initialisation.")
+        .clone();
+
+
+    manager.remove(guild_id).await.expect("TODO: panic message");
+
+    ctx.say(format!("Leaving <#{}>!", channel_id)).await?;
+    Ok(())
+}
 #[tokio::main]
 async fn main() {
     dotenv().ok();
