@@ -44,6 +44,50 @@ async fn hello(
 
     Ok(())
 }
+
+#[derive(Deserialize)]
+struct WorldTime {
+    timezone: String,
+    datetime: String,
+}
+
+impl WorldTime {
+    pub fn to_timestamp(self) -> Timestamp {
+        let t = self.datetime.split(' ')
+            .collect::<Vec<&str>>()
+            .join("T") + ".000Z";
+
+        Timestamp::from_str(&t).unwrap()
+    }
+}
+
+#[poise::command(slash_command, prefix_command)]
+async fn timezone(
+    ctx: Context<'_>,
+    #[description = "City"] city: String,
+) -> Result<(), Error> {
+
+    let ninja_api_key = std::env::var("API_NINJAS_KEY").expect("missing API_NINJAS_KEY");
+
+    let client = reqwest::Client::new();
+    let res = client
+        .get(format!("https://api.api-ninjas.com/v1/worldtime?city={}", city))
+        .header("X-Api-Key", ninja_api_key)
+        .send()
+        .await?
+        .json::<WorldTime>()
+        .await
+        .unwrap();
+
+    let embed = CreateEmbed::new()
+        .title(format!("City: {}", city))
+        .description(format!("Timezone: {}", res.timezone))
+        .timestamp(res.to_timestamp());
+    let builder = CreateReply::default().embed(embed);
+    ctx.send(builder).await?;
+
+    Ok(())
+}
 #[tokio::main]
 async fn main() {
     dotenv().ok();
