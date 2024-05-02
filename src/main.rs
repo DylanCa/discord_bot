@@ -31,6 +31,19 @@ async fn age(
     ctx.say(response).await?;
     Ok(())
 }
+
+#[poise::command(slash_command, prefix_command)]
+async fn hello(
+    ctx: Context<'_>,
+    #[description = "User to tag"] user: Option<serenity::User>,
+) -> Result<(), Error> {
+    let u = user.as_ref().unwrap_or_else(|| ctx.author());
+    let response = format!("Hello <@{:?}>!", u.id.get());
+    let builder = CreateReply::default().content(response);
+    ctx.send(builder).await?;
+
+    Ok(())
+}
 #[tokio::main]
 async fn main() {
     dotenv().ok();
