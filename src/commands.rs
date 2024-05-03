@@ -13,6 +13,15 @@ pub struct Data {} // User data, which is stored and accessible in all command i
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
+#[poise::command(slash_command, prefix_command)]
+async fn echo(ctx: Context<'_>, #[description = "Say something"] msg: String) -> Result<(), Error> {
+    let u = ctx.author();
+    let response = format!("<@{}> said: {}", u.id, msg);
+    let builder = CreateReply::default().content(response);
+    ctx.send(builder).await?;
+
+    Ok(())
+}
 
 /// Displays your or another user's account creation date
 #[poise::command(slash_command, prefix_command)]
